@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import shop.controller.form.CancelForm
+import shop.controller.form.ExpiredForm
 import shop.controller.form.SaveForm
 import shop.controller.form.UseForm
 import shop.service.PointService
@@ -30,5 +31,10 @@ class PointController(
     @PostMapping("/cancel")
     fun cancel(@RequestBody form: CancelForm) {
         service.cancel(form)
+    }
+
+    @PostMapping("/expired")
+    fun expired(@RequestBody form: ExpiredForm) {
+        service.expired(form.userId)
     }
 }

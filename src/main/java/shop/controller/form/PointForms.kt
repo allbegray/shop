@@ -14,3 +14,7 @@ data class CancelForm(
     val userId: Long,
     val pointId: Long
 )
+
+data class ExpiredForm(
+    val userId: Long,
+)

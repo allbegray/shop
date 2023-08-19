@@ -26,7 +26,7 @@ fun guid(): String {
 }
 
 enum class PointType {
-    SAVE, USE, CANCEL
+    SAVE, USE, CANCEL, EXPIRED
 }
 
 @Service
@@ -79,7 +79,7 @@ class PointService(
             .set(USER_POINT_DETAIL.GROUP_ID, detailId)
             .execute()
 
-        refreshUserTotalPoint(userId)
+        expired(userId)
     }
 
     fun use(form: UseForm) {
@@ -149,7 +149,7 @@ class PointService(
             }
         }
 
-        refreshUserTotalPoint(userId)
+        expired(userId)
     }
 
     fun cancel(form: CancelForm) {
@@ -192,6 +192,56 @@ class PointService(
                 .set(USER_POINT_DETAIL.TYPE, newPointType)
                 .set(USER_POINT_DETAIL.POINT, detail.point * -1)
                 .set(USER_POINT_DETAIL.GROUP_ID, detail.groupId)
+                .execute()
+        }
+
+        expired(userId)
+    }
+
+    fun expired(userId: Long) {
+        val pointSumField = DSL.sum(USER_POINT_DETAIL.POINT).`as`("p")
+        val expiredPoints = dsl
+            .select(
+                USER_POINT_DETAIL.GROUP_ID,
+                pointSumField
+            )
+            .from(USER_POINT)
+            .join(USER_POINT_DETAIL).on(USER_POINT.ID.eq(USER_POINT_DETAIL.USER_POINT_ID))
+            .where(
+                USER_POINT.USER_ID.eq(userId)
+                    .and(
+                        USER_POINT.EXPIRED_AT.lt(DSL.currentLocalDateTime())
+                            .or(USER_POINT.EXPIRED_AT.isNull)
+                    )
+            )
+            .groupBy(
+                USER_POINT_DETAIL.GROUP_ID
+            )
+            .having(
+                pointSumField.greaterThan(BigDecimal.valueOf(0))
+            )
+            .fetch {
+                it.value1() to it.value2().toLong()
+            }
+
+        val pointType = PointType.EXPIRED.name
+        for (expiredPoint in expiredPoints) {
+            val (groupId, point) = expiredPoint
+
+            val newPointId = dsl.insertInto(USER_POINT)
+                .set(USER_POINT.USER_ID, userId)
+                .set(USER_POINT.TYPE, pointType)
+                .set(USER_POINT.POINT, (point * -1).toInt())
+                .returningResult(USER_POINT.ID)
+                .single()
+                .value1()
+
+            dsl.insertInto(USER_POINT_DETAIL)
+                .set(USER_POINT_DETAIL.ID, guid().toByteArray())
+                .set(USER_POINT_DETAIL.USER_POINT_ID, newPointId)
+                .set(USER_POINT_DETAIL.TYPE, pointType)
+                .set(USER_POINT_DETAIL.POINT, (point * -1).toInt())
+                .set(USER_POINT_DETAIL.GROUP_ID, groupId)
                 .execute()
         }
 
