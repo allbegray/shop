@@ -8,23 +8,8 @@ import shop.Tables.*
 import shop.controller.form.CancelForm
 import shop.controller.form.SaveForm
 import shop.controller.form.UseForm
-import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.*
-
-fun guid(): String {
-    val uuid = UUID.randomUUID().toString()
-    return listOf(
-        15 to 4,
-        10 to 4,
-        1 to 8,
-        20 to 4,
-        25 to 12
-    ).joinToString("") { (s, endIndex) ->
-        val startIndex = s - 1
-        uuid.substring(startIndex, startIndex + endIndex)
-    }
-}
 
 enum class PointType {
     SAVE, USE, CANCEL, EXPIRED
@@ -35,6 +20,23 @@ enum class PointType {
 class PointService(
     private val dsl: DSLContext
 ) {
+    /**
+     * @see <a href="https://www.percona.com/blog/store-uuid-optimized-way/">MySQL 에서 흔하게 사용되는 순차적 BINARY ID 생성 java 버전</a>
+     */
+    private fun guid(): String {
+        val uuid = UUID.randomUUID().toString()
+        return listOf(
+            15 to 4,
+            10 to 4,
+            1 to 8,
+            20 to 4,
+            25 to 12
+        ).joinToString("") { (s, endIndex) ->
+            val startIndex = s - 1
+            uuid.substring(startIndex, startIndex + endIndex)
+        }
+    }
+
     // user 테이블의 point 갱신
     private fun refreshUserTotalPoint(userId: Long) {
         val totalPoint = dsl
@@ -104,7 +106,7 @@ class PointService(
                 USER_POINT_DETAIL.GROUP_ID
             )
             .having(
-                pointSumField.greaterThan(BigDecimal.valueOf(0))
+                pointSumField.greaterThan(0.toBigDecimal())
             )
             .orderBy(
                 USER_POINT.EXPIRED_AT.asc()
@@ -219,7 +221,7 @@ class PointService(
                 USER_POINT_DETAIL.GROUP_ID
             )
             .having(
-                pointSumField.greaterThan(BigDecimal.valueOf(0))
+                pointSumField.greaterThan(0.toBigDecimal())
             )
             .fetch {
                 it.value1() to it.value2().toLong()
