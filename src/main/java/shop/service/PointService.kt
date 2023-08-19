@@ -9,6 +9,7 @@ import shop.controller.form.CancelForm
 import shop.controller.form.SaveForm
 import shop.controller.form.UseForm
 import java.math.BigDecimal
+import java.time.LocalDate
 import java.util.*
 
 fun guid(): String {
@@ -64,7 +65,7 @@ class PointService(
             .set(USER_POINT.USER_ID, userId)
             .set(USER_POINT.TYPE, pointType)
             .set(USER_POINT.POINT, point)
-            .set(USER_POINT.EXPIRED_AT, DSL.localDateTimeAdd(DSL.currentLocalDateTime(), 3)) // 3일
+            .set(USER_POINT.EXPIRED_AT, LocalDate.now().plusDays(3)) // 3일
             .returningResult(USER_POINT.ID)
             .single()
             .value1()
@@ -210,7 +211,7 @@ class PointService(
             .where(
                 USER_POINT.USER_ID.eq(userId)
                     .and(
-                        USER_POINT.EXPIRED_AT.lt(DSL.currentLocalDateTime())
+                        USER_POINT.EXPIRED_AT.lt(DSL.currentLocalDate())
                             .or(USER_POINT.EXPIRED_AT.isNull)
                     )
             )

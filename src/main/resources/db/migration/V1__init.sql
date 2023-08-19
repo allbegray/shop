@@ -16,7 +16,7 @@ create table user_point
     `user_id`    bigint                 not null references `user` (`id`),
     `type`       varchar(32)            not null,
     `point`      int                    not null,
-    `expired_at` datetime,
+    `expired_at` date,
     `created_at` datetime default now() not null
 );
 
