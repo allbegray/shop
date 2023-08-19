@@ -59,9 +59,10 @@ class PointService(
     fun save(form: SaveForm) {
         val (userId, point) = form
 
+        val pointType = PointType.SAVE.name
         val pointId = dsl.insertInto(USER_POINT)
             .set(USER_POINT.USER_ID, userId)
-            .set(USER_POINT.TYPE, PointType.SAVE.name)
+            .set(USER_POINT.TYPE, pointType)
             .set(USER_POINT.POINT, point)
             .set(USER_POINT.EXPIRED_AT, DSL.localDateTimeAdd(DSL.currentLocalDateTime(), 3)) // 3일
             .returningResult(USER_POINT.ID)
@@ -73,7 +74,7 @@ class PointService(
         dsl.insertInto(USER_POINT_DETAIL)
             .set(USER_POINT_DETAIL.ID, detailId)
             .set(USER_POINT_DETAIL.USER_POINT_ID, pointId)
-            .set(USER_POINT_DETAIL.TYPE, PointType.SAVE.name)
+            .set(USER_POINT_DETAIL.TYPE, pointType)
             .set(USER_POINT_DETAIL.POINT, point)
             .set(USER_POINT_DETAIL.GROUP_ID, detailId)
             .execute()
@@ -112,9 +113,10 @@ class PointService(
             }
 
         // 포인트 사용
+        val pointType = PointType.USE.name
         val pointId = dsl.insertInto(USER_POINT)
             .set(USER_POINT.USER_ID, userId)
-            .set(USER_POINT.TYPE, PointType.USE.name)
+            .set(USER_POINT.TYPE, pointType)
             .set(USER_POINT.POINT, point * -1)
             .returningResult(USER_POINT.ID)
             .single()
@@ -131,7 +133,7 @@ class PointService(
                 dsl.insertInto(USER_POINT_DETAIL)
                     .set(USER_POINT_DETAIL.ID, guid().toByteArray())
                     .set(USER_POINT_DETAIL.USER_POINT_ID, pointId)
-                    .set(USER_POINT_DETAIL.TYPE, PointType.USE.name)
+                    .set(USER_POINT_DETAIL.TYPE, pointType)
                     .set(USER_POINT_DETAIL.POINT, (p * -1).toInt())
                     .set(USER_POINT_DETAIL.GROUP_ID, groupId)
                     .execute()
@@ -139,7 +141,7 @@ class PointService(
                 dsl.insertInto(USER_POINT_DETAIL)
                     .set(USER_POINT_DETAIL.ID, guid().toByteArray())
                     .set(USER_POINT_DETAIL.USER_POINT_ID, pointId)
-                    .set(USER_POINT_DETAIL.TYPE, PointType.USE.name)
+                    .set(USER_POINT_DETAIL.TYPE, pointType)
                     .set(USER_POINT_DETAIL.POINT, (tempPoint * -1).toInt())
                     .set(USER_POINT_DETAIL.GROUP_ID, groupId)
                     .execute()
@@ -153,13 +155,14 @@ class PointService(
     fun cancel(form: CancelForm) {
         val (userId, pointId) = form
 
-        // 취소할 포인트 조회
+        // 사용한 포인트 조회
+        val pointType = PointType.USE.name
         val pointRecord = dsl
             .selectFrom(USER_POINT)
             .where(
                 USER_POINT.ID.eq(pointId)
                     .and(USER_POINT.USER_ID.eq(userId))
-                    .and(USER_POINT.TYPE.eq(PointType.USE.name))
+                    .and(USER_POINT.TYPE.eq(pointType))
             )
             .fetchOne() ?: throw NullPointerException()
 
@@ -167,15 +170,16 @@ class PointService(
             .selectFrom(USER_POINT_DETAIL)
             .where(
                 USER_POINT_DETAIL.USER_POINT_ID.eq(pointId)
-                    .and(USER_POINT_DETAIL.TYPE.eq(PointType.USE.name))
+                    .and(USER_POINT_DETAIL.TYPE.eq(pointType))
             )
             .fetch()
             .ifEmpty { throw NullPointerException() }
 
         // 취소 포인트 추가
+        val newPointType = PointType.CANCEL.name
         val newPointId = dsl.insertInto(USER_POINT)
             .set(USER_POINT.USER_ID, userId)
-            .set(USER_POINT.TYPE, PointType.CANCEL.name)
+            .set(USER_POINT.TYPE, newPointType)
             .set(USER_POINT.POINT, pointRecord.point * -1)
             .returningResult(USER_POINT.ID)
             .single()
@@ -185,7 +189,7 @@ class PointService(
             dsl.insertInto(USER_POINT_DETAIL)
                 .set(USER_POINT_DETAIL.ID, guid().toByteArray())
                 .set(USER_POINT_DETAIL.USER_POINT_ID, newPointId)
-                .set(USER_POINT_DETAIL.TYPE, PointType.CANCEL.name)
+                .set(USER_POINT_DETAIL.TYPE, newPointType)
                 .set(USER_POINT_DETAIL.POINT, detail.point * -1)
                 .set(USER_POINT_DETAIL.GROUP_ID, detail.groupId)
                 .execute()
