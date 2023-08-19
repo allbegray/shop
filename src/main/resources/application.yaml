@@ -1,8 +1,12 @@
 server:
-  port: 8081
+  port: 8082
 spring:
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
     url: jdbc:mariadb://localhost:3306/shop
     username: test
     password: test123!@#
+logging:
+  level:
+    root: info
+    org.jooq: debug
